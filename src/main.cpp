@@ -16,7 +16,7 @@ int main() {
         tableFile.insertRow({"Charlie", "35", "Manager"});
 
         // Read all rows
-        vector<vector<string>> rows = tableFile.readAllRows();
+        vector<vector<string>> rows = tableFile.scanAll();
         for (const auto& row : rows) {
             for (const auto& col : row) {
                 cout << col << " ";

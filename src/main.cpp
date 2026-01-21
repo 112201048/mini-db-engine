@@ -11,8 +11,8 @@ int main() {
         TableFile tableFile("datatest.db");
 
         // Insert some rows
-        tableFile.insertRow({"Alice", "30", "Engineer"});
-        tableFile.insertRow({"Bob", "25", "Designer"});
+        // tableFile.insertRow({"Alice", "30", "Engineer"});
+        // tableFile.insertRow({"Bob", "25", "Designer"});
         tableFile.insertRow({"Charlie", "35", "Manager"});
 
         // Read all rows

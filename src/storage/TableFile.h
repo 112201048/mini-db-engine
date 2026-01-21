@@ -24,6 +24,7 @@ private:
     Page* getLastPage();
     Page* createNewPage();
     void writePageToDisk(Page* page);
+    Page readPageFromDisk(uint32_t pageID);
 
     vector<Page> pages;
 };

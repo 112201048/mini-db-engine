@@ -16,6 +16,15 @@ TableFile::TableFile(const string& filename) {
         file.close();
         file.open(filename, ios::in | ios::out | ios::binary);
     }
+    file.seekg(0, ios::end);
+    size_t fileSize = file.tellg();
+    size_t numPages = fileSize / PAGE_SIZE;
+    if (fileSize % PAGE_SIZE != 0) throw runtime_error("Corrupt table file: partial page detected");
+    file.seekg(0, ios::beg);
+    for (uint32_t i = 0; i < numPages; ++i) {
+        Page page = readPageFromDisk(i);
+        pages.push_back(page);
+    }
 }
 
 TableFile::~TableFile() {
@@ -83,4 +92,13 @@ void TableFile::writePageToDisk(Page* page) {
     file.seekp(pageID * PAGE_SIZE, ios::beg);
     file.write(page->data(), PAGE_SIZE);
     file.flush();
+}
+
+Page TableFile::readPageFromDisk(uint32_t pageID) {
+    Page page(pageID);
+    file.seekg(pageID * PAGE_SIZE, ios::beg);
+    if (!file.read(page.data(), PAGE_SIZE)) {
+        throw runtime_error("Failed to read page from disk");
+    }
+    return page;
 }

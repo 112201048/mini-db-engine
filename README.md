@@ -14,6 +14,7 @@ Implemented features:
 - In memory page management
 - Binary serialization
 - Pages written to disk
+- Direct row lookup using Row Identifiers (RID)
 
 At this stage, pages are kept in memory during execution. Pages in the disk do not get reloaded on startup. Deletes, updates, and indexing are not yet supported.
 

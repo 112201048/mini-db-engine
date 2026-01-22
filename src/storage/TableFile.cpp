@@ -53,6 +53,14 @@ vector<char> serializeRow(const vector<string>& row) {
     return buffer;
 }
 
+vector<string> TableFile::getRow(const RID& rid) {
+    if (rid.pageID >= pages.size()) {
+        throw runtime_error("Invalid RID: pageID out of bounds");
+    }
+    Page& page = pages[rid.pageID];
+    return page.readRow(rid.slotID);
+}
+
 RID TableFile::insertRow(const vector<string>& row) {
     auto rowData = serializeRow(row);
 

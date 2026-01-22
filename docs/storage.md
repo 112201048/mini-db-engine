@@ -47,3 +47,17 @@ The storage engine maintains the following invariants:
 - The free space region always lies between stored rows and the slot directory.
 - A row’s physical location is identified only by its RID, not by byte offsets.
 - Pages are append-only in the current phase; deletes, updates, and compaction are not yet supported.
+- A valid RID always refers to an existing page and slot entry.
+
+## RID based lookup
+
+The storage engine supports direct row access using a Row Identifier (RID).
+An RID uniquely identifies a row using the page ID and slot ID.
+
+Given an RID, the tool performs the following steps:
+1. Locate the target page using the page ID from the RID.
+2. Access the corresponding slot entry
+3. Read the row data using the slot's offset and length.
+4. Deserialize the row into column values
+
+RID based lookups avoids full table scans and provides constant time access to rows

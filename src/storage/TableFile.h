@@ -18,6 +18,7 @@ public:
     TableFile(const string& filename);
     ~TableFile();
     RID insertRow(const vector<string>& row);
+    vector<string> getRow(const RID& rid);
     vector<vector<string>> scanAll();
 private:
     fstream file;

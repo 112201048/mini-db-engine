@@ -28,6 +28,7 @@ public:
     }
     uint16_t insertRow(const std::vector<char>& rowData);
     vector<vector<string>> readAllRows() const;
+    vector<string> readRow(uint16_t slotID) const;
 
     const char* data() const { return buffer.data(); }
     char* data() { return buffer.data(); }

@@ -46,6 +46,34 @@ uint16_t Page::insertRow(const std::vector<char>& rowData) {
     return header->numSlots - 1;
 }
 
+vector<string> Page::readRow(uint16_t slotID) const {
+    const PageHeader* header = reinterpret_cast<const PageHeader*>(buffer.data());
+    
+    if (slotID >= header->numSlots) {
+        throw runtime_error("Invalid slot ID");
+    }
+
+    const Slot* slot = reinterpret_cast<const Slot*>(buffer.data() + PAGE_SIZE - (slotID + 1) * sizeof(Slot));
+    const char* rowData = buffer.data() + slot->offset;
+    uint16_t rowLength = slot->length;
+
+    // Parse the row data
+    vector<string> row;
+    size_t bytesRead = 0;
+    while (bytesRead < rowLength) {
+        uint32_t colSize;
+        memcpy(&colSize, rowData + bytesRead, sizeof(uint32_t));
+        bytesRead += sizeof(uint32_t);
+
+        string colData(rowData + bytesRead, colSize);
+        bytesRead += colSize;
+
+        row.push_back(colData);
+    }
+
+    return row;
+}
+
 vector<vector<string>> Page::readAllRows() const {
     const PageHeader* header = reinterpret_cast<const PageHeader*>(buffer.data());
     vector<vector<string>> allRows;

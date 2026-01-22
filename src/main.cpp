@@ -11,9 +11,17 @@ int main() {
         TableFile tableFile("datatest.db");
 
         // Insert some rows
-        // tableFile.insertRow({"Alice", "30", "Engineer"});
-        // tableFile.insertRow({"Bob", "25", "Designer"});
-        tableFile.insertRow({"Charlie", "35", "Manager"});
+        RID r1 = tableFile.insertRow({"Alice", "30", "Engineer"});
+        RID r2 = tableFile.insertRow({"Bob", "25", "Designer"});
+        RID r3 = tableFile.insertRow({"Charlie", "35", "Manager"});
+        RID r4 = tableFile.insertRow({"Diana", "28", "Analyst"});
+
+        vector<string> rowexample = tableFile.getRow(r2); // Example of retrieving a single row
+        cout << "Retrieved Row: ";
+        for (const auto& col : rowexample) {
+            cout << col << " ";
+        }
+        cout << endl;
 
         // Read all rows
         vector<vector<string>> rows = tableFile.scanAll();

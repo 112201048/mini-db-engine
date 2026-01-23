@@ -1,3 +1,6 @@
+#ifndef TABLEFILE_H
+#define TABLEFILE_H
+
 //Table File Abstraction
 //Each TableFile represents a file on disk that stores table data.
 #include <fstream>
@@ -29,3 +32,5 @@ private:
 
     vector<Page> pages;
 };
+
+#endif // TABLEFILE_H

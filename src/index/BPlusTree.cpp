@@ -115,3 +115,23 @@ void BPlusTree::insert(Key key, const RID& rid) {
         splitLeaf(leaf, path);
     }
 }
+
+vector<RID> BPlusTree::rangeScan(Key low, Key high){
+    vector<RID> result;
+    vector<BPlusNode*> dummy;
+    BPlusNode* node = findLeaf(low, dummy);
+    auto it = lower_bound(node->keys.begin(), node->keys.end(), low);
+    size_t index = distance(node->keys.begin(), it);
+    while (node) {
+        while (index < node->keys.size()) {
+            if (node->keys[index] > high) {
+                return result;
+            }
+            result.push_back(node->rids[index]);
+            index++;
+        }
+        node = node->next;
+        index = 0;
+    }
+    return result;
+}

@@ -6,6 +6,7 @@ public:
 
     void insert(Key key, const RID& rid);
     bool search(Key key, RID& rid);
+    vector<RID> rangeScan(Key low, Key high);
 private:
     BPlusNode* root;
     int order;

@@ -6,8 +6,62 @@
 
 using namespace std;
 
-BPlusTree::BPlusTree(int order) : order(order){
-    root = new BPlusNode(true);//start with a leaf
+BPlusTree::BPlusTree(int order, string filename)
+    : order(order), file(filename) {
+
+    uint32_t rootID = file.readRootID();
+
+    if (rootID == INVALID_NODE) {
+        // First time creation
+        root = new BPlusNode(true);
+        root->nodeID = file.allocateNode();
+        persistNode(root);
+        file.writeRootID(root->nodeID);
+    } else {
+        // Reload existing tree
+        root = loadNode(rootID);
+    }
+}
+
+BPlusNode* BPlusTree::loadNode(uint32_t nodeID) {
+    NodePage page = file.readNode(nodeID);
+
+    BPlusNode* node = new BPlusNode(page.header.isLeaf);
+    node->nodeID = page.header.nodeID;
+    node->keys = page.keys;
+
+    if (node->isLeaf) {
+        node->rids = page.rids;
+        if (page.header.nextLeaf != INVALID_NODE) {
+            node->next = loadNode(page.header.nextLeaf);
+        }
+    } else {
+        for (auto childID : page.children) {
+            node->children.push_back(loadNode(childID));
+        }
+    }
+
+    return node;
+}
+
+void BPlusTree::persistNode(BPlusNode* n) {
+    NodePage page{};
+    page.header.nodeID = n->nodeID;
+    page.header.isLeaf = n->isLeaf;
+    page.header.numKeys = n->keys.size();
+    page.header.nextLeaf =
+        n->isLeaf && n->next ? n->next->nodeID : INVALID_NODE;
+
+    page.keys = n->keys;
+
+    if (n->isLeaf)
+        page.rids = n->rids;
+    else {
+        for (auto c : n->children)
+            page.children.push_back(c->nodeID);
+    }
+
+    file.writeNode(page);
 }
 
 BPlusNode* BPlusTree::findLeaf(Key key, vector<BPlusNode*>& path) {
@@ -32,6 +86,7 @@ void BPlusTree::insertInternal(BPlusNode* node, Key key, BPlusNode* rightChild, 
     if (node->keys.size() > order) {
         splitInternal(node, path);
     }
+    persistNode(node);
 }
 
 void BPlusTree::splitInternal(BPlusNode* node, vector<BPlusNode*>& path) {
@@ -39,6 +94,7 @@ void BPlusTree::splitInternal(BPlusNode* node, vector<BPlusNode*>& path) {
     Key promotedKey = node->keys[mid];
 
     BPlusNode* newInternal = new BPlusNode(false);
+    newInternal->nodeID = file.allocateNode();
 
     newInternal->keys.assign(node->keys.begin() + mid + 1, node->keys.end());
     newInternal->children.assign(node->children.begin() + mid + 1, node->children.end());
@@ -52,7 +108,12 @@ void BPlusTree::splitInternal(BPlusNode* node, vector<BPlusNode*>& path) {
         newRoot->keys.push_back(promotedKey);
         newRoot->children.push_back(node);
         newRoot->children.push_back(newInternal);
+        newRoot->nodeID = file.allocateNode();
+        persistNode(newRoot);
+        persistNode(node);
+        persistNode(newInternal);
         root = newRoot;
+        file.writeRootID(root->nodeID);
         return;
     }
 
@@ -60,11 +121,15 @@ void BPlusTree::splitInternal(BPlusNode* node, vector<BPlusNode*>& path) {
     BPlusNode* parent = path.back();
     path.pop_back();
     insertInternal(parent, promotedKey, newInternal, path);
+    persistNode(node);
+    persistNode(newInternal);
+    persistNode(parent);
 }
 
 void BPlusTree::splitLeaf(BPlusNode* leaf, vector<BPlusNode*>& path) {
     int mid = (order + 1) / 2;
     BPlusNode *newLeaf = new BPlusNode(true);
+    newLeaf->nodeID = file.allocateNode();
     newLeaf->keys.assign(leaf->keys.begin() + mid, leaf->keys.end());
     newLeaf->rids.assign(leaf->rids.begin() + mid, leaf->rids.end());
     leaf->keys.resize(mid);
@@ -82,7 +147,12 @@ void BPlusTree::splitLeaf(BPlusNode* leaf, vector<BPlusNode*>& path) {
         newRoot->keys.push_back(promotedKey);
         newRoot->children.push_back(leaf);
         newRoot->children.push_back(newLeaf);
+        newRoot->nodeID = file.allocateNode();
         root = newRoot;
+        persistNode(leaf);
+        persistNode(newLeaf);
+        persistNode(newRoot);
+        file.writeRootID(root->nodeID);
         return;
     }
 
@@ -90,6 +160,9 @@ void BPlusTree::splitLeaf(BPlusNode* leaf, vector<BPlusNode*>& path) {
     BPlusNode* parent = path.back();
     path.pop_back();
     insertInternal(parent, promotedKey, newLeaf, path);
+    persistNode(leaf);
+    persistNode(newLeaf);
+    persistNode(parent); // if exists
 }
 
 bool BPlusTree::search(Key key, RID& out) {
@@ -114,12 +187,14 @@ void BPlusTree::insert(Key key, const RID& rid) {
     if (leaf->keys.size() > order) {
         splitLeaf(leaf, path);
     }
+    persistNode(leaf);
 }
 
 vector<RID> BPlusTree::rangeScan(Key low, Key high){
     vector<RID> result;
     vector<BPlusNode*> dummy;
     BPlusNode* node = findLeaf(low, dummy);
+    if (!node) return result;
     auto it = lower_bound(node->keys.begin(), node->keys.end(), low);
     size_t index = distance(node->keys.begin(), it);
     while (node) {

@@ -9,24 +9,30 @@ using namespace std;
 
 int main() {
     try {
-        TableFile tableFile("datatest.db");
+        BPlusTree tree(3, "test_index.db");
 
-        BPlusTree index(3);
+    auto res = tree.rangeScan(5, 15);
 
-        for (int i = 1; i <= 50; i++) {
-            RID r = tableFile.insertRow({to_string(i)});
-            index.insert(i, r);
-        }
+    for(auto &r : res)
+        cout << r.slotID << " ";
+        // TableFile tableFile("datatest.db");
+        // string tableName = "table";
+        // BPlusTree index(3, tableName + "_index.db");
 
-        for (int i = 1; i <= 50; i++) {
-            RID out;
-            if (!index.search(i, out)) {
-                cout << "Missing key " << i << endl;
-                return 1;
-            }
-        }
+        // for (int i = 1; i <= 50; i++) {
+        //     RID r = tableFile.insertRow({to_string(i)});
+        //     index.insert(i, r);
+        // }
 
-        cout << "OK\n";
+        // for (int i = 1; i <= 50; i++) {
+        //     RID out;
+        //     if (!index.search(i, out)) {
+        //         cout << "Missing key " << i << endl;
+        //         return 1;
+        //     }
+        // }
+
+        // cout << "OK\n";
 
 
         // Insert some rows

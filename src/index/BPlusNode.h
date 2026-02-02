@@ -7,6 +7,7 @@ using namespace std;
 using Key = int32_t;
 
 struct BPlusNode {
+    uint32_t nodeID;
     bool isLeaf;
     vector<Key> keys;
     vector<BPlusNode*> children; // For internal nodes

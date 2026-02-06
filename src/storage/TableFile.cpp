@@ -7,7 +7,7 @@
 #include <vector>
 #include <cstring>
 
-TableFile::TableFile(const string& filename) {
+TableFile::TableFile(const string& filename) : index(3, filename + "_index.db") {
     file.open(filename, ios::in | ios::out | ios::binary);
     if (!file.is_open()) {
         // If the file does not exist, create it
@@ -71,7 +71,32 @@ RID TableFile::insertRow(const vector<string>& row) {
     }
     uint16_t slotID = page->insertRow(rowData);
     writePageToDisk(page);
-    return {page->getPageID(), slotID};
+    RID rid = {page->getPageID(), slotID};
+    Key key = extractKeyFromRow(row);   // decide which column is indexed
+    index.insert(key, rid);
+    return rid;
+}
+
+Key extractKeyFromRow(const vector<string>& row) {
+    int indexedColumn = 0;      // for now, hardcode
+    return stoi(row[indexedColumn]);
+}
+
+vector<string> TableFile::findByKey(Key k) {
+    RID rid;
+    if (index.search(k, rid))
+        return getRow(rid);
+    throw runtime_error("Key not found");
+}
+
+vector<vector<string>> TableFile::rangeQuery(Key low, Key high) {
+    auto rids = index.rangeScan(low, high);
+
+    vector<vector<string>> result;
+    for (auto &r : rids)
+        result.push_back(getRow(r));
+
+    return result;
 }
 
 vector<vector<string>> TableFile::scanAll() {

@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <BPlusTree.h>
 using namespace std;
 
 class Page; //forward declaration
@@ -20,9 +21,12 @@ class TableFile {
 public:
     TableFile(const string& filename);
     ~TableFile();
+    BPlusTree index;
     RID insertRow(const vector<string>& row);
     vector<string> getRow(const RID& rid);
     vector<vector<string>> scanAll();
+    vector<string> findByKey(Key k);
+    vector<vector<string>> rangeQuery(Key low, Key high);
 private:
     fstream file;
     Page* getLastPage();

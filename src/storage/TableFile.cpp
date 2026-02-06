@@ -1,13 +1,15 @@
 //Implementation of the TableFile class that manages table data storage on disk.
 
 #include "TableFile.h"
+#include "index/BPlusTree.h"
 #include "Page.h"
 #include <stdexcept>
 #include <cstdint>
 #include <vector>
 #include <cstring>
 
-TableFile::TableFile(const string& filename) : index(3, filename + "_index.db") {
+TableFile::TableFile(const string& filename){
+    index = new BPlusTree(3, filename + "_index.db");
     file.open(filename, ios::in | ios::out | ios::binary);
     if (!file.is_open()) {
         // If the file does not exist, create it
@@ -73,24 +75,24 @@ RID TableFile::insertRow(const vector<string>& row) {
     writePageToDisk(page);
     RID rid = {page->getPageID(), slotID};
     Key key = extractKeyFromRow(row);   // decide which column is indexed
-    index.insert(key, rid);
+    index->insert(key, rid);
     return rid;
 }
 
-Key extractKeyFromRow(const vector<string>& row) {
+Key TableFile::extractKeyFromRow(const vector<string>& row) {
     int indexedColumn = 0;      // for now, hardcode
     return stoi(row[indexedColumn]);
 }
 
 vector<string> TableFile::findByKey(Key k) {
     RID rid;
-    if (index.search(k, rid))
+    if (index->search(k, rid))
         return getRow(rid);
     throw runtime_error("Key not found");
 }
 
 vector<vector<string>> TableFile::rangeQuery(Key low, Key high) {
-    auto rids = index.rangeScan(low, high);
+    auto rids = index->rangeScan(low, high);
 
     vector<vector<string>> result;
     for (auto &r : rids)

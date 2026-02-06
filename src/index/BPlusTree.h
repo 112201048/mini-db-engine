@@ -1,5 +1,12 @@
-#include "BPlusNode.h"
-#include "BPlusDiskTree.h"
+#pragma once
+#include "include/Common.h"
+#include <string>
+#include <vector>
+
+using namespace std;
+
+class BPlusDiskTree; // forward declaration
+class BPlusNode; // forward declaration
 
 class BPlusTree {
 public:
@@ -9,7 +16,7 @@ public:
     bool search(Key key, RID& rid);
     vector<RID> rangeScan(Key low, Key high);
 private:
-    BPlusDiskTree file;
+    BPlusDiskTree* file;
     BPlusNode* root;
     int order;
 

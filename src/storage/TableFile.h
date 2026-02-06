@@ -1,27 +1,21 @@
-#ifndef TABLEFILE_H
-#define TABLEFILE_H
-
+#pragma once
 //Table File Abstraction
 //Each TableFile represents a file on disk that stores table data.
 #include <fstream>
 #include <vector>
 #include <string>
 #include <cstdint>
-#include <BPlusTree.h>
+#include "include/Common.h"
 using namespace std;
 
 class Page; //forward declaration
-
-struct RID {
-    uint32_t pageID;
-    uint16_t slotID;
-};
+class BPlusTree;
 
 class TableFile {
 public:
     TableFile(const string& filename);
     ~TableFile();
-    BPlusTree index;
+    BPlusTree* index;
     RID insertRow(const vector<string>& row);
     vector<string> getRow(const RID& rid);
     vector<vector<string>> scanAll();
@@ -33,8 +27,7 @@ private:
     Page* createNewPage();
     void writePageToDisk(Page* page);
     Page readPageFromDisk(uint32_t pageID);
+    Key extractKeyFromRow(const vector<string>& row);
 
     vector<Page> pages;
 };
-
-#endif // TABLEFILE_H

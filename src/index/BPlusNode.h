@@ -1,10 +1,9 @@
+#pragma once
 #include <vector>
 #include <cstdint>
-#include "storage/TableFile.h"
+#include "include/Common.h"
 
 using namespace std;
-
-using Key = int32_t;
 
 struct BPlusNode {
     uint32_t nodeID;

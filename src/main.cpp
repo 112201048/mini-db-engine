@@ -9,12 +9,20 @@ using namespace std;
 
 int main() {
     try {
-        BPlusTree tree(3, "test_index.db");
+        TableFile t("students.db");
 
-    auto res = tree.rangeScan(5, 15);
+        // t.insertRow({"1","Alice"});
+        // t.insertRow({"3","Bob"});
 
-    for(auto &r : res)
-        cout << r.slotID << " ";
+        auto row = t.findByKey(3);
+
+
+        cout << "Row for key 2: ";
+        for (const auto& col : row) {
+            cout << col << " ";
+        }
+        cout << endl;
+
         // TableFile tableFile("datatest.db");
         // string tableName = "table";
         // BPlusTree index(3, tableName + "_index.db");

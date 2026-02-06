@@ -1,9 +1,9 @@
 #pragma once
 #include <vector>
 #include <cstdint>
-#include "storage/TableFile.h"
+#include "include/Common.h"
 
-using Key = int32_t;
+using namespace std;
 
 constexpr uint32_t INDEX_PAGE_SIZE = 4096;
 

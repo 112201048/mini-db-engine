@@ -22,6 +22,15 @@ BPlusDiskTree::BPlusDiskTree(const string& filename) {
         file.write(pad.data(), pad.size());
         file.flush();
     }
+    // file.seekg(0, ios::end);
+    // if (file.tellg() < INDEX_PAGE_SIZE) {
+    //     file.seekp(0);
+    //     IndexMeta meta{INVALID_NODE};
+    //     file.write(reinterpret_cast<char*>(&meta), sizeof(meta));
+    //     vector<char> pad(INDEX_PAGE_SIZE - sizeof(meta), 0);
+    //     file.write(pad.data(), pad.size());
+    //     file.flush();
+    // }
 }
 
 uint32_t BPlusDiskTree::readRootID() {

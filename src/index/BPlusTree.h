@@ -14,6 +14,7 @@ public:
 
     void insert(Key key, const RID& rid);
     bool search(Key key, RID& rid);
+    void remove(Key key);
     vector<RID> rangeScan(Key low, Key high);
 private:
     BPlusDiskTree* file;

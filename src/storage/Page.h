@@ -10,6 +10,7 @@ constexpr uint32_t PAGE_SIZE = 4096; //4KB page size
 struct Slot {
     uint16_t offset; // Offset of the record within the page
     uint16_t length; // Length of the record    
+    bool isOccupied; // Whether this slot is currently occupied
 };
 
 struct PageHeader {
@@ -30,6 +31,7 @@ public:
     uint16_t insertRow(const std::vector<char>& rowData);
     vector<vector<string>> readAllRows() const;
     vector<string> readRow(uint16_t slotID) const;
+    void deleteRow(uint16_t slotID);
 
     const char* data() const { return buffer.data(); }
     char* data() { return buffer.data(); }

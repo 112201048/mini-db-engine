@@ -20,6 +20,7 @@ public:
     vector<string> getRow(const RID& rid);
     vector<vector<string>> scanAll();
     vector<string> findByKey(Key k);
+    void deleteByKey(Key k);
     vector<vector<string>> rangeQuery(Key low, Key high);
 private:
     fstream file;

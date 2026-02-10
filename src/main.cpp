@@ -12,12 +12,10 @@ int main() {
         TableFile t("students.db");
 
         // t.insertRow({"1","Alice"});
-        // t.insertRow({"3","Bob"});
-
-        auto row = t.findByKey(3);
-
-
-        cout << "Row for key 2: ";
+        // t.insertRow({"2","Bob"});
+        t.deleteByKey(1);
+        auto row = t.findByKey(1);
+        // cout << "Row for key 2: ";
         for (const auto& col : row) {
             cout << col << " ";
         }

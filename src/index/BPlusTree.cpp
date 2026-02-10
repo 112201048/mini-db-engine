@@ -193,6 +193,23 @@ void BPlusTree::insert(Key key, const RID& rid) {
     persistNode(leaf);
 }
 
+void BPlusTree::remove(Key key) {
+    vector<BPlusNode*> path;
+    BPlusNode* leaf = findLeaf(key, path);
+
+    auto it = lower_bound(leaf->keys.begin(), leaf->keys.end(), key);
+
+    if (it == leaf->keys.end() || *it != key)
+        return;
+
+    size_t index = distance(leaf->keys.begin(), it);
+
+    leaf->keys.erase(it);
+    leaf->rids.erase(leaf->rids.begin() + index);
+
+    persistNode(leaf);
+}
+
 vector<RID> BPlusTree::rangeScan(Key low, Key high){
     vector<RID> result;
     vector<BPlusNode*> dummy;

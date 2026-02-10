@@ -40,11 +40,26 @@ uint16_t Page::insertRow(const std::vector<char>& rowData) {
     Slot* slot = reinterpret_cast<Slot*>(buffer.data() + PAGE_SIZE - (header->numSlots + 1) * sizeof(Slot));
     slot->offset = rowOffset;
     slot->length = rowSize;
+    slot->isOccupied = true;
 
     header->numSlots += 1;
 
     return header->numSlots - 1;
 }
+
+void Page::deleteRow(uint16_t slotID) {
+    const PageHeader* header = reinterpret_cast<const PageHeader*>(buffer.data());
+    if (slotID >= header->numSlots)
+        throw runtime_error("Invalid slot ID");
+
+    Slot* slot = reinterpret_cast<Slot*>(buffer.data() + PAGE_SIZE - (slotID + 1) * sizeof(Slot));
+
+    if (!slot->isOccupied)
+        throw runtime_error("Row already deleted");
+
+    slot->isOccupied = false;
+}
+
 
 vector<string> Page::readRow(uint16_t slotID) const {
     const PageHeader* header = reinterpret_cast<const PageHeader*>(buffer.data());
@@ -54,6 +69,8 @@ vector<string> Page::readRow(uint16_t slotID) const {
     }
 
     const Slot* slot = reinterpret_cast<const Slot*>(buffer.data() + PAGE_SIZE - (slotID + 1) * sizeof(Slot));
+    if (!slot->isOccupied)
+        throw runtime_error("Attempt to read deleted row");
     const char* rowData = buffer.data() + slot->offset;
     uint16_t rowLength = slot->length;
 

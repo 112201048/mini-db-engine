@@ -79,6 +79,19 @@ RID TableFile::insertRow(const vector<string>& row) {
     return rid;
 }
 
+void TableFile::deleteByKey(Key k) {
+    RID rid;
+
+    if (!index->search(k, rid))
+        throw runtime_error("Key not found");
+    pages[rid.pageID].deleteRow(rid.slotID);
+
+    writePageToDisk(&pages[rid.pageID]);
+
+    index->remove(k);
+}
+
+
 Key TableFile::extractKeyFromRow(const vector<string>& row) {
     int indexedColumn = 0;      // for now, hardcode
     return stoi(row[indexedColumn]);

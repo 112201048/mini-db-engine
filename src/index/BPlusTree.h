@@ -14,7 +14,7 @@ public:
 
     void insert(Key key, const RID& rid);
     bool search(Key key, RID& rid);
-    void remove(Key key);
+    bool remove(Key key);
     vector<RID> rangeScan(Key low, Key high);
 private:
     BPlusDiskTree* file;
@@ -23,6 +23,9 @@ private:
 
     void insertInternal(BPlusNode* node, Key key, BPlusNode* rightChild, vector<BPlusNode*>& path);
     void persistNode(BPlusNode* node);
+    int minKeys() const;
+    void rebalanceLeaf(BPlusNode* leaf, vector<BPlusNode*>& path);
+    void rebalanceInternal(BPlusNode* node, vector<BPlusNode*>& path);
     BPlusNode* findLeaf(Key key, vector<BPlusNode*>& path);
     void splitLeaf(BPlusNode* leaf, vector<BPlusNode*>& path);
     void splitInternal(BPlusNode* node, vector<BPlusNode*>& path);

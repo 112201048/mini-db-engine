@@ -9,17 +9,18 @@ using namespace std;
 
 int main() {
     try {
-        TableFile t("students.db");
+        BPlusTree tree(3, "borrow_test.db");
+        
+        tree.insert(1, {0, static_cast<uint16_t>(1)});
+        tree.insert(2, {0, static_cast<uint16_t>(2)});
+        tree.insert(4, {0, static_cast<uint16_t>(4)});
+        tree.insert(5, {0, static_cast<uint16_t>(5)});
+        tree.insert(3, {0, static_cast<uint16_t>(3)});
 
-        // t.insertRow({"1","Alice"});
-        // t.insertRow({"2","Bob"});
-        t.deleteByKey(1);
-        auto row = t.findByKey(1);
-        // cout << "Row for key 2: ";
-        for (const auto& col : row) {
-            cout << col << " ";
-        }
-        cout << endl;
+
+        tree.remove(4);
+        // the print came for merging leaves, why is that? We should have borrowed from right sibling (3,4,5,6) instead of merging with left sibling (1,2)
+
 
         // TableFile tableFile("datatest.db");
         // string tableName = "table";

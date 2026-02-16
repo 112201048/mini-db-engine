@@ -26,6 +26,33 @@ BPlusTree::BPlusTree(int order, string filename)
     }
 }
 
+int BPlusTree::minKeys() const {
+    return (order + 1) / 2 - 1;
+}
+
+BPlusNode* getLeftSibling(BPlusNode* node, BPlusNode* parent, int& index) {
+    for (int i = 0; i < parent->children.size(); i++) {
+        if (parent->children[i] == node) {
+            index = i;
+            if (i > 0)
+                return parent->children[i - 1];
+        }
+    }
+    return nullptr;
+}
+
+BPlusNode* getRightSibling(BPlusNode* node, BPlusNode* parent, int& index) {
+    for (int i = 0; i < parent->children.size(); i++) {
+        if (parent->children[i] == node) {
+            index = i;
+            if (i < parent->children.size() - 1)
+                return parent->children[i + 1];
+        }
+    }
+    return nullptr;
+}
+
+
 BPlusNode* BPlusTree::loadNode(uint32_t nodeID) {
     NodePage page = file->readNode(nodeID);
 
@@ -193,21 +220,234 @@ void BPlusTree::insert(Key key, const RID& rid) {
     persistNode(leaf);
 }
 
-void BPlusTree::remove(Key key) {
+void BPlusTree::rebalanceInternal(
+    BPlusNode* node,
+    vector<BPlusNode*>& path)
+{
+    if (node == root) {
+        if (node->keys.empty()) {
+            root = node->children[0];
+            file->writeRootID(root->nodeID);
+        }
+        return;
+    }
+
+    BPlusNode* parent = path.back();
+    path.pop_back();
+
+    int index = 0;
+    BPlusNode* left = getLeftSibling(node, parent, index);
+    BPlusNode* right = getRightSibling(node, parent, index);
+
+    // CASE 1 — Borrow from left
+    if (left && left->keys.size() > minKeys()) {
+
+        // Pull separator from parent
+        node->keys.insert(node->keys.begin(),
+            parent->keys[index - 1]);
+
+        // Move last child of left
+        node->children.insert(node->children.begin(),
+            left->children.back());
+
+        // Move key up from left to parent
+        parent->keys[index - 1] = left->keys.back();
+
+        left->keys.pop_back();
+        left->children.pop_back();
+
+        persistNode(left);
+        persistNode(node);
+        persistNode(parent);
+        return;
+    }
+
+    // CASE 2 — Borrow from right
+    if (right && right->keys.size() > minKeys()) {
+
+        node->keys.push_back(parent->keys[index]);
+
+        node->children.push_back(right->children.front());
+
+        parent->keys[index] = right->keys.front();
+
+        right->keys.erase(right->keys.begin());
+        right->children.erase(right->children.begin());
+
+        persistNode(right);
+        persistNode(node);
+        persistNode(parent);
+        return;
+    }
+
+    // CASE 3 — Merge
+
+    if (left) {
+
+        // Pull separator down
+        left->keys.push_back(parent->keys[index - 1]);
+
+        // Merge keys
+        left->keys.insert(left->keys.end(),
+            node->keys.begin(), node->keys.end());
+
+        // Merge children
+        left->children.insert(left->children.end(),
+            node->children.begin(), node->children.end());
+
+        parent->keys.erase(parent->keys.begin() + index - 1);
+        parent->children.erase(parent->children.begin() + index);
+
+        persistNode(left);
+        persistNode(parent);
+
+        if (parent->keys.size() < minKeys())
+            rebalanceInternal(parent, path);
+
+    } else if (right) {
+
+        node->keys.push_back(parent->keys[index]);
+
+        node->keys.insert(node->keys.end(),
+            right->keys.begin(), right->keys.end());
+
+        node->children.insert(node->children.end(),
+            right->children.begin(), right->children.end());
+
+        parent->keys.erase(parent->keys.begin() + index);
+        parent->children.erase(parent->children.begin() + index + 1);
+
+        persistNode(node);
+        persistNode(parent);
+
+        if (parent->keys.size() < minKeys())
+            rebalanceInternal(parent, path);
+    }
+}
+
+void BPlusTree::rebalanceLeaf(BPlusNode* leaf,
+                              vector<BPlusNode*>& path) {
+
+    BPlusNode* parent = path.back();
+    path.pop_back();
+
+    int index = 0;
+    BPlusNode* left = getLeftSibling(leaf, parent, index);
+    BPlusNode* right = getRightSibling(leaf, parent, index);
+
+    // CASE 1 — Borrow from left
+    if (left && left->keys.size() > minKeys()) {
+        cout << "Borrowing from left\n";
+        leaf->keys.insert(leaf->keys.begin(),
+                          left->keys.back());
+        leaf->rids.insert(leaf->rids.begin(),
+                          left->rids.back());
+
+        left->keys.pop_back();
+        left->rids.pop_back();
+
+        parent->keys[index - 1] = leaf->keys.front();
+
+        persistNode(left);
+        persistNode(leaf);
+        persistNode(parent);
+        return;
+    }
+
+    // CASE 2 — Borrow from right
+    if (right && right->keys.size() > minKeys()) {
+        cout << "Borrowing from right\n";
+        leaf->keys.push_back(right->keys.front());
+        leaf->rids.push_back(right->rids.front());
+
+        right->keys.erase(right->keys.begin());
+        right->rids.erase(right->rids.begin());
+
+        parent->keys[index] = right->keys.front();
+
+        persistNode(right);
+        persistNode(leaf);
+        persistNode(parent);
+        return;
+    }
+
+    // CASE 3 — Merge
+
+    if (left) {
+        cout << "Merging leaves\n";
+        // merge into left
+        left->keys.insert(left->keys.end(),
+                          leaf->keys.begin(), leaf->keys.end());
+        left->rids.insert(left->rids.end(),
+                          leaf->rids.begin(), leaf->rids.end());
+
+        left->next = leaf->next;
+
+        parent->keys.erase(parent->keys.begin() + index - 1);
+        parent->children.erase(parent->children.begin() + index);
+
+        persistNode(left);
+        persistNode(parent);
+
+        if (parent == root && parent->keys.empty()) {
+            root = left;
+            file->writeRootID(root->nodeID);
+        }
+
+    } else if (right) {
+        cout << "Merging leaves\n";
+        // merge right into leaf
+        leaf->keys.insert(leaf->keys.end(),
+                          right->keys.begin(), right->keys.end());
+        leaf->rids.insert(leaf->rids.end(),
+                          right->rids.begin(), right->rids.end());
+
+        leaf->next = right->next;
+
+        parent->keys.erase(parent->keys.begin() + index);
+        parent->children.erase(parent->children.begin() + index + 1);
+
+        persistNode(leaf);
+        persistNode(parent);
+
+        if (parent == root && parent->keys.empty()) {
+            root = leaf;
+            file->writeRootID(root->nodeID);
+        }
+    }
+
+    // Parent may now underflow
+    if (parent != root && parent->keys.size() < minKeys()) {
+        rebalanceInternal(parent, path);
+    }
+}
+
+
+bool BPlusTree::remove(Key key) {
     vector<BPlusNode*> path;
     BPlusNode* leaf = findLeaf(key, path);
 
     auto it = lower_bound(leaf->keys.begin(), leaf->keys.end(), key);
 
     if (it == leaf->keys.end() || *it != key)
-        return;
+        return false;
 
     size_t index = distance(leaf->keys.begin(), it);
 
     leaf->keys.erase(it);
     leaf->rids.erase(leaf->rids.begin() + index);
 
+    if (leaf == root){
+        persistNode(leaf);
+        return true;
+    }
+
+    if (leaf->keys.size() < minKeys()) {
+        rebalanceLeaf(leaf, path);
+    }
+
     persistNode(leaf);
+    return true;
 }
 
 vector<RID> BPlusTree::rangeScan(Key low, Key high){
